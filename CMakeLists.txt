@@ -3,6 +3,7 @@ project(project C)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
+set(PROJECT_NAME "cpu_emulator")
 
 # Enable compiler warnings and treat warnings as errors
 if (MSVC)

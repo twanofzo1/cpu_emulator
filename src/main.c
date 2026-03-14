@@ -6,8 +6,14 @@
 
 
 
-int main(){
-    FILE* input = file_open("program.asm", FILE_MODE_READ_BINARY);
+int main(int argc, char** argv) {
+
+    if (argc == 1) {
+        printf("Usage: %s <input_file>\n", argv[0]);
+        return 1;
+    }
+    
+    FILE* input = file_open(argv[1], FILE_MODE_READ_BINARY);
     if (input == NULL) {
         printf("Error opening input file\n");
         return 1;
@@ -35,8 +41,10 @@ int main(){
     printf("Assembled %zu bytes\n", program_size);
     cpu_load_program(cpu, program, program_size);
     cpu_run_program(cpu);
+    #ifndef NDEBUG
     cpu_print_memory(cpu);
     cpu_print_registers(cpu);
-
+    #endif
+    printf("\n");
     return 0;
 }

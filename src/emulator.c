@@ -257,6 +257,14 @@ static inline void opp_readb(Cpu* cpu, Instruction instr){
         fprintf(stderr, "Memory read out of bounds: address 0x%04X (byte)\n", addr);
         exit(1);
     }
+
+    if (addr == PRINT_READ_ADDR) {
+        int c = getchar();
+        if (c == EOF) c = 0; // treat EOF as null byte
+        cpu->registers[DECODE_REGISTER1(instr)] = c;
+        return;
+    }
+
     cpu->registers[DECODE_REGISTER1(instr)] = cpu->memory[addr];
 }
 
@@ -270,12 +278,18 @@ static inline void opp_storew(Cpu* cpu, Instruction instr){
     memcpy(cpu->memory + addr, &val, 4);
 }
 
+
 static inline void opp_storeb(Cpu* cpu, Instruction instr){
     u32 addr = (u32)((i32)cpu->registers[DECODE_REGISTER2(instr)] + (i16)instr.immediate);
     if (addr >= MEMORY_SIZE) {
         fprintf(stderr, "Memory write out of bounds: address 0x%04X (byte)\n", addr);
         exit(1);
     }
+    if (addr == PRINT_READ_ADDR) {
+        putchar(cpu->registers[DECODE_REGISTER1(instr)] & 0xFF);
+        return;
+    }
+
     cpu->memory[addr] = (byte)(cpu->registers[DECODE_REGISTER1(instr)] & 0xFF);
 }
 

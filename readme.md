@@ -3,6 +3,14 @@ This is a simple RISC inspired CPU emulator written in C. It supports a basic se
 it also has a simple custom assembler with its own syntax for writing assembly code that can be assembled into machine code and executed by the emulator.
 
 
+# Building and running
+To build there is a build.sh script that compiles the source code and creates an executable called `emulator`. You can run the emulator with an assembly file as an argument, for example:
+```bash
+./emulator program.asm
+```
+
+
+
 
 # Assembly instructions
 

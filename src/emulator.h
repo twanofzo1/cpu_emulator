@@ -61,7 +61,7 @@ typedef enum {
 
 #define STACK_START     0x0F00
 #define STACK_END       0x1000
-
+#define PRINT_READ_ADDR (STACK_START -1)
 
 enum {
     CPU_FLAG_LESS = 1 << 0,
