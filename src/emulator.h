@@ -18,14 +18,13 @@ typedef enum {
     SUBI    ,
     MULI    ,
     DIVI    ,
-
+    
     JMP     ,
-    JEZ     ,
-    JNEZ    ,
-    JGZ     ,
-    JLZ     ,
-    JGEZ    ,
-    JLEZ    ,
+    CMP     ,
+    JE      ,
+    JNE     ,
+    JG      ,
+    JL      ,
 
     POP     ,
     PUSH    ,
@@ -59,6 +58,14 @@ typedef enum {
 #define STACK_START     0x0F00
 #define STACK_END       0x1000
 
+
+enum {
+    CPU_FLAG_LESS = 1 << 0,
+    CPU_FLAG_EQUAL = 1 << 1,
+    CPU_FLAG_GREATER = 1 << 2,
+};
+
+
 typedef struct
 {
     i32 registers[REGISTERS_COUNT];
@@ -66,6 +73,7 @@ typedef struct
     u64 stack_pointer;
     u64 heap_pointer;
     byte memory[MEMORY_SIZE];
+    u8 flags;
 } Cpu;
 
 

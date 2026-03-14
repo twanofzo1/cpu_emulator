@@ -1,4 +1,5 @@
 #include "emulator.h"
+#include "printf_color.h"
 
 Cpu* cpu_create(){
     Cpu* cpu = (Cpu*)malloc(sizeof(Cpu));
@@ -14,6 +15,10 @@ typedef struct {
     u32 end;
 } Memory_section;
 
+
+// %02X for 2 digit hex for 1 byte,
+// %04X for 4 digit hex for 2 bytes, 
+// %#010X for 8 digit hex with 0x prefix for 4 bytes 
 void cpu_print_memory(Cpu* cpu){
     const int PER_ROW = 32;
     Memory_section sections[] = {
@@ -26,14 +31,17 @@ void cpu_print_memory(Cpu* cpu){
     for (int s = 0; s < 4; ++s) {
         printf("\n%s memory [%04X-%04X]:\n", sections[s].name, sections[s].start, sections[s].end-1);
         for (u32 i = sections[s].start; i < sections[s].end; ++i) {
+            
             if ((i-sections[s].start) % PER_ROW == 0) {
                 printf("%04X: ", i);
             }
+
             if (i == cpu->stack_pointer || i == cpu->heap_pointer) {
-                printf("\033[1;33m%02X\033[0m ", cpu->memory[i]);
+                printf_blue("%02X ", cpu->memory[i]); // highlight stack and heap pointers in blue
             } else {
                 printf("%02X ", cpu->memory[i]);
             }
+
             if ((i-sections[s].start+1) % PER_ROW == 0 || i == sections[s].end-1) {
                 printf("\n");
             }
@@ -46,7 +54,7 @@ void cpu_print_memory(Cpu* cpu){
 void cpu_print_registers(Cpu* cpu){
     printf("Register memory:\n");
     for (u8 i = 0; i <REGISTERS_COUNT; i++){
-        printf("Register %i: %#018x\n",i,cpu->registers[i]);
+        printf("Register %i: %#010X\n",i,cpu->registers[i]);
     }
     printf("\n");
 }
@@ -131,42 +139,47 @@ static inline void opp_jmp(Cpu* cpu, Instruction instr){
 }
 
 
+static inline void opp_cmp(Cpu* cpu, Instruction instr){
+    i32 val1 = cpu->registers[DECODE_REGISTER1(instr)];
+    i32 val2 = cpu->registers[DECODE_REGISTER2(instr)];
+    cpu->flags = cpu->flags & ~(CPU_FLAG_EQUAL | CPU_FLAG_GREATER | CPU_FLAG_LESS); // reset flags
+    if (val1 < val2){
+        cpu->flags |= CPU_FLAG_LESS;
+    }
+    else if (val1 == val2){
+        cpu->flags |= CPU_FLAG_EQUAL;
+    }
+    else {
+        cpu->flags |= CPU_FLAG_GREATER;
+    }
+}
 
-static inline void opp_jez(Cpu* cpu, Instruction instr){
-    if (cpu->registers[DECODE_REGISTER1(instr)] == 0) {
+
+static inline void opp_je(Cpu* cpu, Instruction instr){
+    if (cpu->flags & CPU_FLAG_EQUAL) {
         cpu->program_counter = instr.immediate;
     }
 }
 
-static inline void opp_jnez(Cpu* cpu, Instruction instr){
-    if (cpu->registers[DECODE_REGISTER1(instr)] != 0) {
+static inline void opp_jne(Cpu* cpu, Instruction instr){
+    if (!(cpu->flags & CPU_FLAG_EQUAL)) {
         cpu->program_counter = instr.immediate;
     }
 }
 
-static inline void opp_jgz(Cpu* cpu, Instruction instr){
-    if (cpu->registers[DECODE_REGISTER1(instr)] > 0) {
+static inline void opp_jg(Cpu* cpu, Instruction instr){
+    if (cpu->flags & CPU_FLAG_GREATER) {
         cpu->program_counter = instr.immediate;
     }
 }
 
-static inline void opp_jlz(Cpu* cpu, Instruction instr){
-    if (cpu->registers[DECODE_REGISTER1(instr)] < 0) {
+static inline void opp_jl(Cpu* cpu, Instruction instr){
+    if (cpu->flags & CPU_FLAG_LESS) {
         cpu->program_counter = instr.immediate;
     }
 }
 
-static inline void opp_jgez(Cpu* cpu, Instruction instr){
-    if (cpu->registers[DECODE_REGISTER1(instr)] >= 0) {
-        cpu->program_counter = instr.immediate;
-    }
-}
 
-static inline void opp_jlez(Cpu* cpu, Instruction instr){
-    if (cpu->registers[DECODE_REGISTER1(instr)] <= 0) {
-        cpu->program_counter = instr.immediate;
-    }
-}
 
 static inline void opp_call(Cpu* cpu, Instruction instr){
     if (cpu->stack_pointer + 4 > STACK_END) {
@@ -295,12 +308,11 @@ void cpu_run_program(Cpu* cpu){
 
             // jump opps
             case JMP:   opp_jmp(cpu, instr); break;
-            case JEZ:   opp_jez(cpu, instr); break;
-            case JNEZ:  opp_jnez(cpu, instr); break;
-            case JGZ:   opp_jgz(cpu, instr); break;
-            case JLZ:   opp_jlz(cpu, instr); break;
-            case JGEZ:  opp_jgez(cpu, instr); break;
-            case JLEZ:  opp_jlez(cpu, instr); break;
+            case CMP:   opp_cmp(cpu, instr); break;
+            case JE:    opp_je(cpu, instr); break;
+            case JNE:   opp_jne(cpu, instr); break;
+            case JG:    opp_jg(cpu, instr); break;
+            case JL:    opp_jl(cpu, instr); break;
 
             // stack ops
             case POP:   opp_pop(cpu, instr); break;

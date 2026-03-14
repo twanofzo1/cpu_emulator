@@ -19,7 +19,6 @@ int main(){
         return 1;
     }
     file_close(input);
-
     defer(free(file_contents));
 
     Cpu* cpu = cpu_create();

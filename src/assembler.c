@@ -18,12 +18,11 @@ OpcodeEntry opcode_table[] = {
     { "MULI" ,  MULI },
     { "DIVI" ,  DIVI },
     { "JMP"  ,  JMP  },
-    { "JEZ"  ,  JEZ  },
-    { "JNEZ" ,  JNEZ },
-    { "JGZ"  ,  JGZ  },
-    { "JLZ"  ,  JLZ  },
-    { "JGEZ" ,  JGEZ },
-    { "JLEZ" ,  JLEZ },
+    { "CMP"  ,  CMP  },
+    { "JE"  ,   JE   },
+    { "JNE" ,   JNE  },
+    { "JG"  ,   JG   },
+    { "JL"  ,   JL   },
     { "POP"  ,  POP  },
     { "PUSH" ,  PUSH },
     { "CALL" ,  CALL },
@@ -117,7 +116,7 @@ typedef enum {
     ITYPE_REG_REG,    // MOV, ADD, SUB, MUL, DIV
     ITYPE_REG_IMM,    // MOVI, ADDI, SUBI, MULI, DIVI
     ITYPE_IMM,        // JMP
-    ITYPE_REG_ADDR,   // JEZ, JNEZ, JGZ, JLZ, JGEZ, JLEZ
+    ITYPE_REG_ADDR,   // JE, JNE, JG, JL
     ITYPE_REG,        // PUSH, POP
     ITYPE_REG_MEM,    // READW, READB, STOREW, STOREB: reg, offset(reg)
 } InstrType;
@@ -133,6 +132,7 @@ static InstrType get_instr_type(int opcode) {
         case SUB: 
         case MUL: 
         case DIV: 
+        case CMP:
         return ITYPE_REG_REG;
 
         case MOVI: 
@@ -143,15 +143,11 @@ static InstrType get_instr_type(int opcode) {
         return ITYPE_REG_IMM;
 
         case JMP: 
+        case JE: 
+        case JNE: 
+        case JG: 
+        case JL: 
         return ITYPE_IMM;
-
-        case JEZ: 
-        case JNEZ: 
-        case JGZ: 
-        case JLZ: 
-        case JGEZ: 
-        case JLEZ: 
-        return ITYPE_REG_ADDR;
 
         case POP: 
         case PUSH: 

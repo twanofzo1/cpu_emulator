@@ -10,6 +10,10 @@ if (MSVC)
 else()
 	add_compile_options(-Wall -Wextra -Werror)
 endif()
+	
+
+add_compile_options(-DDEFER)
+
 
 # Add default directory as include directory (allows #include <file.h>)
 include_directories(${CMAKE_SOURCE_DIR}/default)
