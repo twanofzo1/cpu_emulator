@@ -61,4 +61,8 @@ the first byte is the opcode,
 the second byte is the encoded as 2 4-bit values for the first and second register , 
 and the last 2 bytes are used for the immediate value (if applicable). 
 
+there is memory-mapped I/O for printing and reading characters.
+- writing a byte to address `0x0EFF` will print the corresponding character to the console.
+- reading a byte from address `0x0EFF` will read a character from the console and store it in the specified register.
+
 
