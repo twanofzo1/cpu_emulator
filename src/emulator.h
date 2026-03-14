@@ -12,6 +12,10 @@ typedef enum {
     SUB     ,
     MUL     ,
     DIV     ,
+    AND     ,
+    OR      ,
+    XOR     ,   
+    NOT     ,
 
     MOVI    ,
     ADDI    ,

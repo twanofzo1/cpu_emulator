@@ -12,6 +12,10 @@ OpcodeEntry opcode_table[] = {
     { "SUB"  ,  SUB  },
     { "MUL"  ,  MUL  },
     { "DIV"  ,  DIV  },
+    { "AND"  ,  AND  },
+    { "OR"   ,  OR   },
+    { "XOR"  ,  XOR  },
+    { "NOT"  ,  NOT  },
     { "MOVI" ,  MOVI },
     { "ADDI" ,  ADDI },
     { "SUBI" ,  SUBI },
@@ -133,6 +137,9 @@ static InstrType get_instr_type(int opcode) {
         case MUL: 
         case DIV: 
         case CMP:
+        case AND:
+        case OR:
+        case XOR:
         return ITYPE_REG_REG;
 
         case MOVI: 
@@ -151,6 +158,7 @@ static InstrType get_instr_type(int opcode) {
 
         case POP: 
         case PUSH: 
+        case NOT:
         return ITYPE_REG;
 
         case CALL:

@@ -1,15 +1,19 @@
 movi R0, 64
 call malloc         ; R0 = pointer to 64 bytes on heap
 
+movi R1, 32          ; Save original pointer
+movi R2, 0          ; Counter
+movi R3, 96         ; Limit
 
-movi R1, 0          
-movi R2, 64         
-loop:
-    addi R1, 1       ; add 1 to counter
-    storeb R1, 0(R0) ; store at pointer
-    addi R0, 1       ; incr pointer 1
 
-    cmp R1, R2       ; compare counter to limit
-    jne loop         ; jump if not equal
-
+not r1
 halt
+
+;loop:
+;    storeb R2, 0(R1) ; store counter at pointer
+;    addi R1, 1       ; increment pointer
+;    addi R2, 1       ; increment counter
+;    cmp R2, R3       ; compare counter to limit
+;    jne loop         ; jump if not equal
+;
+;halt

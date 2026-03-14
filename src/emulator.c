@@ -31,7 +31,7 @@ void cpu_print_memory(Cpu* cpu){
     for (int s = 0; s < 4; ++s) {
         printf("\n%s memory [%04X-%04X]:\n", sections[s].name, sections[s].start, sections[s].end-1);
         for (u32 i = sections[s].start; i < sections[s].end; ++i) {
-            
+
             if ((i-sections[s].start) % PER_ROW == 0) {
                 printf("%04X: ", i);
             }
@@ -136,6 +136,22 @@ static inline void opp_movi(Cpu* cpu, Instruction instr){
 
 static inline void opp_jmp(Cpu* cpu, Instruction instr){
     cpu->program_counter = instr.immediate;
+}
+
+static inline void opp_and(Cpu* cpu, Instruction instr){
+    cpu->registers[DECODE_REGISTER1(instr)] &= cpu->registers[DECODE_REGISTER2(instr)];
+}
+
+static inline void opp_or(Cpu* cpu, Instruction instr){
+    cpu->registers[DECODE_REGISTER1(instr)] |= cpu->registers[DECODE_REGISTER2(instr)];
+}
+
+static inline void opp_xor(Cpu* cpu, Instruction instr){
+    cpu->registers[DECODE_REGISTER1(instr)] ^= cpu->registers[DECODE_REGISTER2(instr)];
+}
+
+static inline void opp_not(Cpu* cpu, Instruction instr){
+    cpu->registers[DECODE_REGISTER1(instr)] = ~cpu->registers[DECODE_REGISTER1(instr)];
 }
 
 
@@ -293,38 +309,42 @@ void cpu_run_program(Cpu* cpu){
         switch (instr.opp_code)
         {
             // register to register opps
-            case ADD:   opp_add(cpu, instr); break;
-            case SUB:   opp_sub(cpu, instr); break;
-            case MUL:   opp_mul(cpu, instr); break;
-            case DIV:   opp_div(cpu, instr); break;
-            case MOV:   opp_mov(cpu, instr); break;
+            case ADD:    opp_add(cpu, instr);    break;
+            case SUB:    opp_sub(cpu, instr);    break;
+            case MUL:    opp_mul(cpu, instr);    break;
+            case DIV:    opp_div(cpu, instr);    break;
+            case MOV:    opp_mov(cpu, instr);    break;
+            case AND:    opp_and(cpu, instr);    break;
+            case OR:     opp_or(cpu, instr);     break;
+            case XOR:    opp_xor(cpu, instr);    break;
+            case NOT:    opp_not(cpu, instr);    break;
 
             // register to immediate opps
-            case ADDI:  opp_addi(cpu, instr); break;
-            case SUBI:  opp_subi(cpu, instr); break;
-            case MULI:  opp_muli(cpu, instr); break;
-            case DIVI:  opp_divi(cpu, instr); break;
-            case MOVI:  opp_movi(cpu, instr); break;
+            case ADDI:   opp_addi(cpu, instr);   break;
+            case SUBI:   opp_subi(cpu, instr);   break;
+            case MULI:   opp_muli(cpu, instr);   break;
+            case DIVI:   opp_divi(cpu, instr);   break;
+            case MOVI:   opp_movi(cpu, instr);   break;
 
             // jump opps
-            case JMP:   opp_jmp(cpu, instr); break;
-            case CMP:   opp_cmp(cpu, instr); break;
-            case JE:    opp_je(cpu, instr); break;
-            case JNE:   opp_jne(cpu, instr); break;
-            case JG:    opp_jg(cpu, instr); break;
-            case JL:    opp_jl(cpu, instr); break;
+            case JMP:    opp_jmp(cpu, instr);    break;
+            case CMP:    opp_cmp(cpu, instr);    break;
+            case JE:     opp_je(cpu, instr);     break;
+            case JNE:    opp_jne(cpu, instr);    break;
+            case JG:     opp_jg(cpu, instr);     break;
+            case JL:     opp_jl(cpu, instr);     break;
 
             // stack ops
-            case POP:   opp_pop(cpu, instr); break;
-            case PUSH:  opp_push(cpu, instr); break;
+            case POP:    opp_pop(cpu, instr);    break;
+            case PUSH:   opp_push(cpu, instr);   break;
 
             // call / return
-            case CALL:  opp_call(cpu, instr); break;
-            case RET:   opp_ret(cpu, instr); break;
+            case CALL:   opp_call(cpu, instr);   break;
+            case RET:    opp_ret(cpu, instr);    break;
 
             // memory ops
-            case READW:  opp_readw(cpu, instr); break;
-            case READB:  opp_readb(cpu, instr); break;
+            case READW:  opp_readw(cpu, instr);  break;
+            case READB:  opp_readb(cpu, instr);  break;
             case STOREW: opp_storew(cpu, instr); break;
             case STOREB: opp_storeb(cpu, instr); break;
 
