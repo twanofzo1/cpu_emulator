@@ -1,28 +1,56 @@
+# CPU Emulator
+This is a simple RISC inspired CPU emulator written in C. It supports a basic set of instructions, including arithmetic operations, jumps, and memory access. 
+it also has a simple custom assembler with its own syntax for writing assembly code that can be assembled into machine code and executed by the emulator.
+
+
+
 # Assembly instructions
 
 | commands  | example            | function                          |
 | ---       |  ---               | ---                               |
-| add       |  `add r1, r2`      | `r1 = r1 + r2`                    |
-| sub       |  `sub r1, r2`      | `r1 = r1 - r2`                    |
-| mul       |  `mul r1, r2`      | `r1 = r1 * r2`                    |
-| div       |  `div r1, r2`      | `r1 = r1 / r2`                    |
-| mov       |  `mov r1, r2`      | `r1 = r2`                         |
-| jmp       |  `jmp label`       | `jump to label`                   |
-| cmp       |  `cmp r1, r2`      | `compare r1 and r2`               |
-| je        |  `je label`        | `jump to label if equal`          |
-| jne       |  `jne label`       | `jump to label if not equal`      |
-| jg        |  `jg label`        | `jump to label if greater`        |
-| jl        |  `jl label`        | `jump to label if less`           |
-| call      |  `call function`   | `call function`                   |
-| ret       |  `ret`             | `return from function`            |
-| push      |  `push r1`         | `push r1 onto stack`              |
-| pop       |  `pop r1`          | `pop from stack into r1`          |
-| :         |  `label:`          | `define a label`                  |
-| ;         |  `; comment`       | `comment`                         |
-| addi      |  `addi r1, r2, 5`  | `r1 = r2 + 5`                     |
-| subi      |  `subi r1, r2, 5`  | `r1 = r2 - 5`                     |
-| muli      |  `muli r1, r2, 5`  | `r1 = r2 * 5`                     |
-| divi      |  `divi r1, r2, 5`  | `r1 = r2 / 5`                     |
-| movi      |  `movi r1, 5`      | `r1 = 5`                          |
+| ADD       |  `ADD R1, R2`      | `reg1 = reg1 + reg2`              |
+| SUB       |  `SUB R1, R2`      | `reg1 = reg1 - reg2`              |
+| MUL       |  `MUL R1, R2`      | `reg1 = reg1 * reg2`              |
+| DIV       |  `DIV R1, R2`      | `reg1 = reg1 / reg2`              |
+| MOV       |  `MOV R1, R2`      | `reg1 = reg2`                     |
+| JMP       |  `JMP LABEL`       | `jump to label`                   |
+| CMP       |  `CMP R1, R2`      | `compare reg1 and reg2`           |
+| JE        |  `JE LABEL`        | `jump to label if equal`          |
+| JNE       |  `JNE LABEL`       | `jump to label if not equal`      |
+| JG        |  `JG LABEL`        | `jump to label if greater`        |
+| JL        |  `JL LABEL`        | `jump to label if less`           |
+| CALL      |  `CALL FUNCTION`   | `call function`                   |
+| RET       |  `RET`             | `return from function`            |
+| PUSH      |  `PUSH R1`         | `push r1 onto stack`              |
+| POP       |  `POP R1`          | `pop from stack into r1`          |
+| :         |  `LABEL:`          | `define a label`                  |
+| ;         |  `; COMMENT`       | `comment`                         |
+| ADDI      |  `ADDI R1, 5`      | `reg1 = reg1 + 5`                 |
+| SUBI      |  `SUBI R1, 5`      | `reg1 = reg1 - 5`                 |
+| MULI      |  `MULI R1, 5`      | `reg1 = reg1 * 5`                 |
+| DIVI      |  `DIVI R1, 5`      | `reg1 = reg1 / 5`                 |
+| MOVI      |  `MOVI R1, 5`      | `reg1 = 5`                        |
+| AND       |  `AND R1, R2`      | `reg1 = reg1 & reg2`              |
+| OR        |  `OR R1, R2`       | `reg1 = reg1 \| reg2`             |
+| XOR       |  `XOR R1, R2`      | `reg1 = reg1 ^ reg2`              |
+| NOT       |  `NOT R1`          | `reg1 = ~reg1`                    |
+| STOREW    |  `STOREW R1, [R2]` | `store word from r1 into memory at address in r2` |
+| READW     |  `READW R1, [R2]`  | `read word from memory at address in r2 into r1`  |
+| STOREB    |  `STOREB R1, [R2]` | `store byte from r1 into memory at address in r2` |
+| READB     |  `READB R1, [R2]`  | `read byte from memory at address in r2 into r1`  |
+
+
+## notes
+all instructions are not case sensitive, so `add r1, r2` is the same as `ADD R1, R2`.
+Malloc is also supported, but it is not an instruction, it is a function that can be called using the `CALL` instruction. For example, to allocate 16 bytes of memory, you can do:
+
+```assembly
+MOVI R0, 16      ; size of memory to allocate
+CALL malloc       ; call malloc function
+```
+each instruction is encoded into 4 bytes, 
+the first byte is the opcode, 
+the second byte is the encoded as 2 4-bit values for the first and second register , 
+and the last 2 bytes are used for the immediate value (if applicable). 
 
 
