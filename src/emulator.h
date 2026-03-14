@@ -32,6 +32,12 @@ typedef enum {
     CALL    ,
     RET     ,
     HALT    ,
+
+    READW   ,
+    READB   ,
+    STOREW  ,
+    STOREB  ,
+    MALLOC  ,
 }Operations;
 
 
@@ -53,11 +59,12 @@ typedef enum {
 #define STACK_START     0x0F00
 #define STACK_END       0x1000
 
-typedef struct 
+typedef struct
 {
-    u32 registers[REGISTERS_COUNT];
+    i32 registers[REGISTERS_COUNT];
     u64 program_counter;
     u64 stack_pointer;
+    u64 heap_pointer;
     byte memory[MEMORY_SIZE];
 } Cpu;
 

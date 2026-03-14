@@ -4,6 +4,7 @@ Cpu* cpu_create(){
     Cpu* cpu = (Cpu*)malloc(sizeof(Cpu));
     cpu->program_counter = PROGRAM_START;
     cpu->stack_pointer = STACK_START;
+    cpu->heap_pointer = DATA_START;
     return cpu;
 }
 
@@ -14,11 +15,11 @@ typedef struct {
 } Memory_section;
 
 void cpu_print_memory(Cpu* cpu){
-    const int PER_ROW = 16;
+    const int PER_ROW = 32;
     Memory_section sections[] = {
         {"Reserved", RESERVED_START, RESERVED_END},
         {"Program" , PROGRAM_START , PROGRAM_END},
-        {"Data"    , DATA_START    , DATA_END},
+        {"Heap"    , DATA_START    , DATA_END},
         {"Stack"   , STACK_START   , STACK_END}
     };
     // this just looks like a clusterfuck
@@ -28,7 +29,7 @@ void cpu_print_memory(Cpu* cpu){
             if ((i-sections[s].start) % PER_ROW == 0) {
                 printf("%04X: ", i);
             }
-            if (i == cpu->stack_pointer) {
+            if (i == cpu->stack_pointer || i == cpu->heap_pointer) {
                 printf("\033[1;33m%02X\033[0m ", cpu->memory[i]);
             } else {
                 printf("%02X ", cpu->memory[i]);
@@ -208,6 +209,63 @@ static inline void opp_push(Cpu* cpu, Instruction instr){
     memcpy(cpu->memory + cpu->stack_pointer, &cpu->registers[DECODE_REGISTER1(instr)], 4);
     cpu->stack_pointer += 4;
 }
+
+
+static inline void opp_readw(Cpu* cpu, Instruction instr){
+    u32 addr = (u32)((i32)cpu->registers[DECODE_REGISTER2(instr)] + (i16)instr.immediate);
+    if (addr + 4 > MEMORY_SIZE) {
+        fprintf(stderr, "Memory read out of bounds: address 0x%04X (word)\n", addr);
+        exit(1);
+    }
+    u32 val;
+    memcpy(&val, cpu->memory + addr, 4);
+    cpu->registers[DECODE_REGISTER1(instr)] = val;
+}
+
+static inline void opp_readb(Cpu* cpu, Instruction instr){
+    u32 addr = (u32)((i32)cpu->registers[DECODE_REGISTER2(instr)] + (i16)instr.immediate);
+    if (addr >= MEMORY_SIZE) {
+        fprintf(stderr, "Memory read out of bounds: address 0x%04X (byte)\n", addr);
+        exit(1);
+    }
+    cpu->registers[DECODE_REGISTER1(instr)] = cpu->memory[addr];
+}
+
+static inline void opp_storew(Cpu* cpu, Instruction instr){
+    u32 addr = (u32)((i32)cpu->registers[DECODE_REGISTER2(instr)] + (i16)instr.immediate);
+    if (addr + 4 > MEMORY_SIZE) {
+        fprintf(stderr, "Memory write out of bounds: address 0x%04X (word)\n", addr);
+        exit(1);
+    }
+    u32 val = cpu->registers[DECODE_REGISTER1(instr)];
+    memcpy(cpu->memory + addr, &val, 4);
+}
+
+static inline void opp_storeb(Cpu* cpu, Instruction instr){
+    u32 addr = (u32)((i32)cpu->registers[DECODE_REGISTER2(instr)] + (i16)instr.immediate);
+    if (addr >= MEMORY_SIZE) {
+        fprintf(stderr, "Memory write out of bounds: address 0x%04X (byte)\n", addr);
+        exit(1);
+    }
+    cpu->memory[addr] = (byte)(cpu->registers[DECODE_REGISTER1(instr)] & 0xFF);
+}
+
+static inline void opp_malloc(Cpu* cpu, Instruction instr){
+    (void)instr;
+    u32 size = cpu->registers[0];
+    if (size == 0) {
+        fprintf(stderr, "Malloc error: cannot allocate 0 bytes\n");
+        exit(1);
+    }
+    if (cpu->heap_pointer + size > DATA_END) {
+        fprintf(stderr, "Malloc error: out of heap memory (requested %u bytes, %u available)\n",
+                size, (u32)(DATA_END - cpu->heap_pointer));
+        exit(1);
+    }
+    u32 ptr = (u32)cpu->heap_pointer;
+    cpu->heap_pointer += size;
+    cpu->registers[0] = ptr;
+}
    
 
 
@@ -251,6 +309,15 @@ void cpu_run_program(Cpu* cpu){
             // call / return
             case CALL:  opp_call(cpu, instr); break;
             case RET:   opp_ret(cpu, instr); break;
+
+            // memory ops
+            case READW:  opp_readw(cpu, instr); break;
+            case READB:  opp_readb(cpu, instr); break;
+            case STOREW: opp_storew(cpu, instr); break;
+            case STOREB: opp_storeb(cpu, instr); break;
+
+            // heap
+            case MALLOC: opp_malloc(cpu, instr); break;
 
             case NOP:   break; // do nothing
             case HALT:  goto function_exit;

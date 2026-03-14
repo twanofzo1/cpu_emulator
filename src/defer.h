@@ -13,7 +13,7 @@
 #define DEFER_CONCAT(a, b) DEFER_CONCAT_IMPL(a, b)
 
 #define defer(stmt) \
-    void DEFER_CONCAT(_defer_func_, __LINE__)(void *_) { stmt; } \
+    void DEFER_CONCAT(_defer_func_, __LINE__)(void *_) { (void)_; stmt; } \
     __attribute__((cleanup(DEFER_CONCAT(_defer_func_, __LINE__)))) char DEFER_CONCAT(_defer_var_, __LINE__)
 
 #endif

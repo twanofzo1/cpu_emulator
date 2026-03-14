@@ -28,7 +28,12 @@ OpcodeEntry opcode_table[] = {
     { "PUSH" ,  PUSH },
     { "CALL" ,  CALL },
     { "RET"  ,  RET  },
-    { "HALT" ,  HALT }
+    { "HALT" ,  HALT },
+    { "READW",  READW },
+    { "READB",  READB },
+    { "STOREW", STOREW },
+    { "STOREB", STOREB },
+    { "MALLOC", MALLOC }
 };
 
 #define OPCODE_TABLE_SIZE (sizeof(opcode_table)/sizeof(opcode_table[0]))
@@ -61,7 +66,7 @@ typedef struct {
 
 // ---- Assembler ----
 
-static char* skip_ws(char* s) {
+static char* skip_whitespace(char* s) {
     while (*s == ' ' || *s == '\t' || *s == '\r') s++;
     return s;
 }
@@ -69,7 +74,8 @@ static char* skip_ws(char* s) {
 static void trim_trailing(char* s) {
     size_t len = strlen(s);
     while (len > 0 && (s[len-1]==' '||s[len-1]=='\t'||s[len-1]=='\r'||s[len-1]=='\n')) {
-        s[--len] = '\0';
+        len--;
+        s[len] = '\0';
     }
 }
 
@@ -107,12 +113,13 @@ static i32 resolve_immediate(const char* token, Assembler* assembler) {
 }
 
 typedef enum {
-    ITYPE_NONE,       // NOP, HALT
+    ITYPE_NONE,       // NOP, HALT, MALLOC
     ITYPE_REG_REG,    // MOV, ADD, SUB, MUL, DIV
     ITYPE_REG_IMM,    // MOVI, ADDI, SUBI, MULI, DIVI
     ITYPE_IMM,        // JMP
     ITYPE_REG_ADDR,   // JEZ, JNEZ, JGZ, JLZ, JGEZ, JLEZ
     ITYPE_REG,        // PUSH, POP
+    ITYPE_REG_MEM,    // READW, READB, STOREW, STOREB: reg, offset(reg)
 } InstrType;
 
 static InstrType get_instr_type(int opcode) {
@@ -155,7 +162,16 @@ static InstrType get_instr_type(int opcode) {
 
         case RET:
         return ITYPE_NONE;
-        
+
+        case READW:
+        case READB:
+        case STOREW:
+        case STOREB:
+        return ITYPE_REG_MEM;
+
+        case MALLOC:
+        return ITYPE_NONE;
+
         default: 
         return ITYPE_NONE;
     }
@@ -175,16 +191,16 @@ static int pass1_collect_labels(Assembler* assembler, const char* source) {
 
         strip_comment(line);
         trim_trailing(line);
-        char* t = skip_ws(line);
+        char* t = skip_whitespace(line);
 
         if (*t) {
             char* colon = strchr(t, ':');
             if (colon) {
                 *colon = '\0';
-                char* name = skip_ws(t);
+                char* name = skip_whitespace(t);
                 trim_trailing(name);
                 if (assembler->label_count >= 255) {
-                    fprintf(stderr, "Error: too many labels\n");
+                    fprintf(stderr, "Error: labels cant exeed 255\n");
                     return 0;
                 }
                 Label* lbl = &assembler->labels[assembler->label_count++];
@@ -192,7 +208,7 @@ static int pass1_collect_labels(Assembler* assembler, const char* source) {
                 lbl->name[254] = '\0';
                 lbl->address = PROGRAM_START + assembler->offset;
 
-                char* rest = skip_ws(colon + 1);
+                char* rest = skip_whitespace(colon + 1);
                 if (*rest) assembler->offset += INSTRUCTION_SIZE;
             } else {
                 assembler->offset += INSTRUCTION_SIZE;
@@ -243,6 +259,37 @@ static int encode_operands(InstrType type, char* ops, Assembler* assembler,
             *reg_byte_out = (r1 << 4);
             break;
         }
+        case ITYPE_REG_MEM: {
+            char* comma = strchr(ops, ',');
+            if (!comma) { fprintf(stderr, "Error on line %d: expected register and offset(register)\n", line_num); return 0; }
+            *comma = '\0';
+            int r1 = parse_register(ops);
+            if (r1 < 0) { fprintf(stderr, "Error on line %d: invalid register\n", line_num); return 0; }
+
+            char* rest = skip_whitespace(comma + 1);
+            char* open_paren = strchr(rest, '(');
+            if (!open_paren) { fprintf(stderr, "Error on line %d: expected offset(register) syntax\n", line_num); return 0; }
+            *open_paren = '\0';
+
+            char* offset_str = skip_whitespace(rest);
+            trim_trailing(offset_str);
+            i32 offset = 0;
+            if (*offset_str) {
+                offset = (i32)strtol(offset_str, NULL, 0);
+            }
+
+            char* reg_str = open_paren + 1;
+            char* close_paren = strchr(reg_str, ')');
+            if (!close_paren) { fprintf(stderr, "Error on line %d: missing closing ')'\n", line_num); return 0; }
+            *close_paren = '\0';
+
+            int r2 = parse_register(reg_str);
+            if (r2 < 0) { fprintf(stderr, "Error on line %d: invalid register in offset(register)\n", line_num); return 0; }
+
+            *reg_byte_out = (r1 << 4) | r2;
+            *imm_out = (u16)(i16)offset;
+            break;
+        }
     }
     return 1;
 }
@@ -266,13 +313,13 @@ static size_t pass2_emit_bytecode(Assembler* assembler, const char* source,
 
         strip_comment(line);
         trim_trailing(line);
-        char* t = skip_ws(line);
+        char* t = skip_whitespace(line);
 
         if (*t) {
             // skip past label definition
             char* colon = strchr(t, ':');
             if (colon) {
-                t = skip_ws(colon + 1);
+                t = skip_whitespace(colon + 1);
                 if (!*t) { p += line_len; if (*p == '\n') p++; continue; }
             }
 
@@ -293,8 +340,23 @@ static size_t pass2_emit_bytecode(Assembler* assembler, const char* source,
                 return 0;
             }
 
-            char* ops = skip_ws(sp);
+            char* ops = skip_whitespace(sp);
             InstrType type = get_instr_type(opcode);
+
+            // Handle "CALL malloc" as built-in MALLOC instruction
+            if (opcode == CALL) {
+                char target[256];
+                strncpy(target, skip_whitespace(ops), 255);
+                target[255] = '\0';
+                trim_trailing(target);
+                for (size_t i = 0; target[i]; i++)
+                    if (target[i] >= 'a' && target[i] <= 'z') target[i] -= 32;
+                if (strcmp(target, "MALLOC") == 0) {
+                    opcode = MALLOC;
+                    type = ITYPE_NONE;
+                }
+            }
+
             byte reg_byte = 0;
             u16 imm = 0;
 

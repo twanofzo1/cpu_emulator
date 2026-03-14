@@ -7,7 +7,7 @@
 
 
 int main(){
-    FILE* input = file_open("program.S", FILE_MODE_READ_BINARY);
+    FILE* input = file_open("program.asm", FILE_MODE_READ_BINARY);
     if (input == NULL) {
         printf("Error opening input file\n");
         return 1;

@@ -4,6 +4,13 @@ project(project C)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 
+# Enable compiler warnings and treat warnings as errors
+if (MSVC)
+	add_compile_options(/W4 /WX)
+else()
+	add_compile_options(-Wall -Wextra -Werror)
+endif()
+
 # Add default directory as include directory (allows #include <file.h>)
 include_directories(${CMAKE_SOURCE_DIR}/default)
 
